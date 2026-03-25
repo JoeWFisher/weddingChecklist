@@ -280,7 +280,7 @@ function render() {
         box.items.forEach((item, ii) => {
           const key = getBoxKey(day.id, box.num, ii);
           const chk = state[key];
-          html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}','${day.id}')">`;
+          html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
           html += `<div class="cb"><div class="check-mark"></div></div>`;
           html += `<div class="item-text">${item}</div></div>`;
         });
