@@ -79,27 +79,39 @@
     .day-name { font-size: 15px; }
     .day-detail { font-size: 11px; }
     .subsection-label { padding: 8px 14px 5px; font-size: 11px; }
-    .item-row { padding: 6px 14px; gap: 8px; }
+    .item-row { padding: 8px 14px; gap: 10px; min-height: 44px; }
     .item-text { font-size: 13px; }
     .item-note { font-size: 11px; }
-    .cb { width: 14px; height: 14px; margin-top: 1px; }
-    .check-mark { width: 8px; height: 8px; }
-    .box-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; }
-    .box-card { padding: 10px 12px; }
-    .box-title { font-size: 12px; margin-bottom: 6px; }
-    .box-num { width: 18px; height: 18px; font-size: 10px; }
-    .box-item-row { padding: 4px 0; gap: 6px; }
-    .box-item-row .cb { width: 12px; height: 12px; }
+    .cb { width: 20px; height: 20px; margin-top: 1px; }
+    .check-mark { width: 12px; height: 12px; }
+    .box-grid { grid-template-columns: 1fr; gap: 8px; }
+    .box-card { padding: 12px; }
+    .box-title { font-size: 12px; margin-bottom: 8px; }
+    .box-num { width: 20px; height: 20px; font-size: 10px; }
+    .box-item-row { padding: 6px 0; gap: 8px; min-height: 40px; }
+    .box-item-row .cb { width: 18px; height: 18px; }
     .box-item-row .item-text { font-size: 12px; }
-    .add-btn { width: 14px; height: 14px; font-size: 11px; margin-left: 6px; }
-    .delete-btn { width: 14px; height: 14px; font-size: 9px; margin-left: 4px; }
-    .edit-input { font-size: 13px; padding: 1px 4px; }
-    .edit-note { font-size: 11px; padding: 1px 4px; }
+    .add-btn { width: 32px; height: 32px; font-size: 16px; margin-left: 8px; }
+    .delete-btn { width: 28px; height: 28px; font-size: 12px; margin-left: 6px; display: inline-flex; }
+    .item-row:hover .delete-btn { display: inline-flex; }
+    .edit-input { font-size: 13px; padding: 8px; border-radius: 8px; min-height: 44px; }
+    .edit-note { font-size: 11px; padding: 8px; border-radius: 8px; min-height: 36px; }
+    .item-text.editable { padding: 8px; min-height: 44px; display: flex; align-items: center; }
     .auth-overlay { padding: 1rem; }
-    .auth-card { width: 100%; max-width: 300px; padding: 1.5rem; }
+    .auth-card { width: 100%; max-width: 320px; padding: 1.5rem; }
     .auth-title { font-size: 16px; margin-bottom: 1rem; }
-    .auth-input { padding: 10px; font-size: 13px; }
-    .auth-btn { padding: 10px; font-size: 13px; }
+    .auth-input { padding: 12px; font-size: 13px; min-height: 44px; border-radius: 8px; }
+    .auth-btn { padding: 12px; font-size: 13px; min-height: 44px; border-radius: 8px; }
+    /* Touch-friendly improvements */
+    .item-row:active { background: #f0f0ed; }
+    .add-btn:active { transform: scale(0.95); }
+    .delete-btn:active { transform: scale(0.95); }
+    .auth-btn:active { transform: scale(0.98); }
+    /* Prevent zoom on input focus */
+    input[type="text"], input[type="password"] { font-size: 16px !important; }
+    /* Edit mode styling */
+    .item-row.editing, .box-item-row.editing { background: #f5f5f2; border-radius: 8px; padding: 12px 14px; }
+    .item-row.editing .auth-btn, .box-item-row.editing .auth-btn { min-height: 36px; font-size: 12px; padding: 8px; }
   }
 </style>
 </head>
@@ -150,6 +162,13 @@ function checkAuth() {
 function initializeApp() {
   loadState();
   render();
+  
+  // Add click outside listener to close edit mode
+  document.addEventListener('click', function(event) {
+    if (editingKey && !event.target.closest('.edit-input') && !event.target.closest('.edit-note') && !event.target.closest('.item-text.editable')) {
+      cancelEdit();
+    }
+  });
 }
 
 const ORIGINAL_DATA = [
@@ -446,12 +465,15 @@ function render() {
         const isEditing = editingKey === key;
         
         if (isEditing) {
-          html += `<div class="item-row">`;
+          html += `<div class="item-row editing">`;
           html += `<div class="cb"><div class="check-mark"></div></div>`;
           html += `<div style="flex:1">`;
           html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item.text}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value, this.nextElementSibling?.value)}else if(event.key==='Escape'){cancelEdit()}">`;
           html += `<input type="text" class="edit-note" data-edit-key="${key}" placeholder="Note (optional)" value="${item.note || ''}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.previousElementSibling.value, this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
-          html += `</div></div>`;
+          html += `<div style="display:flex;gap:8px;margin-top:8px;">`;
+          html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEdit('${key}', document.querySelector('[data-edit-key=\"${key}\"].edit-input').value, document.querySelector('[data-edit-key=\"${key}\"].edit-note').value)">Save</button>`;
+          html += `<button class="auth-btn" style="flex:1;background:#666;" onclick="cancelEdit()">Cancel</button>`;
+          html += `</div></div></div>`;
         } else {
           html += `<div class="item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
           html += `<div class="cb"><div class="check-mark"></div></div>`;
@@ -474,10 +496,14 @@ function render() {
           const isEditing = editingKey === key;
           
           if (isEditing) {
-            html += `<div class="box-item-row">`;
+            html += `<div class="box-item-row editing">`;
             html += `<div class="cb"><div class="check-mark"></div></div>`;
+            html += `<div style="flex:1">`;
             html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
-            html += `</div>`;
+            html += `<div style="display:flex;gap:8px;margin-top:8px;">`;
+            html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEdit('${key}', document.querySelector('[data-edit-key=\"${key}\"].edit-input').value)">Save</button>`;
+            html += `<button class="auth-btn" style="flex:1;background:#666;" onclick="cancelEdit()">Cancel</button>`;
+            html += `</div></div></div>`;
           } else {
             html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
             html += `<div class="cb"><div class="check-mark"></div></div>`;
