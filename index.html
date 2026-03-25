@@ -52,6 +52,15 @@
   .chevron { transition: transform 0.2s; flex-shrink: 0; }
   .chevron.open { transform: rotate(0deg); }
   .chevron.closed { transform: rotate(180deg); }
+  .add-btn { width: 16px; height: 16px; border-radius: 50%; background: #3b6d11; color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-left: 8px; transition: background 0.2s; }
+  .add-btn:hover { background: #2d540d; }
+  .delete-btn { width: 16px; height: 16px; border-radius: 50%; background: #dc2626; color: white; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 10px; margin-left: 6px; transition: background 0.2s; }
+  .item-row:hover .delete-btn { display: inline-flex; }
+  .delete-btn:hover { background: #b91c1c; }
+  .edit-input { border: 1px solid #3b6d11; border-radius: 4px; padding: 2px 6px; font-size: 14px; font-family: inherit; outline: none; background: #f9f9f7; }
+  .edit-note { border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; font-size: 12px; font-family: inherit; outline: none; background: #f9f9f7; margin-top: 2px; width: 100%; }
+  .item-text.editable { cursor: text; padding: 2px 4px; border-radius: 3px; transition: background 0.2s; }
+  .item-text.editable:hover { background: #f5f5f2; }
 </style>
 </head>
 <body>
@@ -64,7 +73,12 @@
 </div>
 
 <script>
-const DATA = [
+let state = {};
+let collapsed = {};
+let editingKey = null;
+let customData = null;
+
+const ORIGINAL_DATA = [
   {
     id: "prep",
     label: "prep",
@@ -216,14 +230,26 @@ const DATA = [
   }
 ];
 
-let state = {};
-const collapsed = {};
+let DATA = [...ORIGINAL_DATA];
 
 function loadState() {
-  try { state = JSON.parse(localStorage.getItem('wpacking') || '{}'); } catch(e) { state = {}; }
+  try { 
+    customData = JSON.parse(localStorage.getItem('wpacking_data') || 'null');
+    if (customData) {
+      DATA = customData;
+    }
+    state = JSON.parse(localStorage.getItem('wpacking') || '{}'); 
+  } catch(e) { 
+    customData = null;
+    DATA = [...ORIGINAL_DATA];
+    state = {}; 
+  }
 }
 function saveState() {
-  try { localStorage.setItem('wpacking', JSON.stringify(state)); } catch(e) {}
+  try { 
+    localStorage.setItem('wpacking', JSON.stringify(state));
+    localStorage.setItem('wpacking_data', JSON.stringify(DATA));
+  } catch(e) {}
 }
 function getKey(dayId, si, ii) { return `${dayId}__${si}__${ii}`; }
 function getBoxKey(dayId, boxNum, ii) { return `box__${dayId}__${boxNum}__${ii}`; }
@@ -234,6 +260,85 @@ function allKeysForDay(day) {
   return keys;
 }
 function countChecked(keys) { return keys.filter(k => state[k]).length; }
+
+function addItem(dayId, subsectionIndex, isBox = false) {
+  const day = DATA.find(d => d.id === dayId);
+  if (!day) return;
+  
+  if (isBox && day.boxes) {
+    day.boxes[subsectionIndex].items.push('New item');
+  } else if (!isBox && day.subsections[subsectionIndex]) {
+    day.subsections[subsectionIndex].items.push({ text: 'New item', note: null });
+  }
+  
+  saveState();
+  render();
+}
+
+function deleteItem(key) {
+  const parts = key.split('__');
+  if (parts[0] === 'box') {
+    const [, dayId, boxNum, itemIndex] = parts;
+    const day = DATA.find(d => d.id === dayId);
+    if (day && day.boxes) {
+      const box = day.boxes.find(b => b.num === boxNum);
+      if (box) {
+        box.items.splice(parseInt(itemIndex), 1);
+      }
+    }
+  } else {
+    const [dayId, subsectionIndex, itemIndex] = parts;
+    const day = DATA.find(d => d.id === dayId);
+    if (day && day.subsections[subsectionIndex]) {
+      day.subsections[subsectionIndex].items.splice(parseInt(itemIndex), 1);
+    }
+  }
+  
+  delete state[key];
+  saveState();
+  render();
+}
+
+function startEdit(key) {
+  editingKey = key;
+  render();
+  setTimeout(() => {
+    const input = document.querySelector(`[data-edit-key="${key}"]`);
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 0);
+}
+
+function saveEdit(key, newText, newNote = null) {
+  const parts = key.split('__');
+  if (parts[0] === 'box') {
+    const [, dayId, boxNum, itemIndex] = parts;
+    const day = DATA.find(d => d.id === dayId);
+    if (day && day.boxes) {
+      const box = day.boxes.find(b => b.num === boxNum);
+      if (box) {
+        box.items[parseInt(itemIndex)] = newText;
+      }
+    }
+  } else {
+    const [dayId, subsectionIndex, itemIndex] = parts;
+    const day = DATA.find(d => d.id === dayId);
+    if (day && day.subsections[subsectionIndex]) {
+      day.subsections[subsectionIndex].items[parseInt(itemIndex)] = { text: newText, note: newNote };
+    }
+  }
+  
+  editingKey = null;
+  saveState();
+  render();
+}
+
+function cancelEdit() {
+  editingKey = null;
+  render();
+}
 
 function render() {
   const app = document.getElementById('app');
@@ -260,14 +365,26 @@ function render() {
     html += `<div class="day-body${isOpen?'':' collapsed'}">`;
 
     day.subsections.forEach((sub, si) => {
-      html += `<div class="subsection"><div class="subsection-label">${sub.name}</div>`;
+      html += `<div class="subsection"><div class="subsection-label">${sub.name}<button class="add-btn" onclick="addItem('${day.id}', ${si})" title="Add item">+</button></div>`;
       sub.items.forEach((item, ii) => {
         const key = getKey(day.id, si, ii);
         const chk = state[key];
-        html += `<div class="item-row${chk?' checked':''}" onclick="toggle('${key}','${day.id}')">`;
-        html += `<div class="cb"><div class="check-mark"></div></div>`;
-        html += `<div><div class="item-text">${item.text}</div>${item.note?`<div class="item-note">${item.note}</div>`:''}</div>`;
-        html += `</div>`;
+        const isEditing = editingKey === key;
+        
+        if (isEditing) {
+          html += `<div class="item-row">`;
+          html += `<div class="cb"><div class="check-mark"></div></div>`;
+          html += `<div style="flex:1">`;
+          html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item.text}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value, this.nextElementSibling?.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+          html += `<input type="text" class="edit-note" data-edit-key="${key}" placeholder="Note (optional)" value="${item.note || ''}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.previousElementSibling.value, this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+          html += `</div></div>`;
+        } else {
+          html += `<div class="item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
+          html += `<div class="cb"><div class="check-mark"></div></div>`;
+          html += `<div><div class="item-text editable" onclick="event.stopPropagation();startEdit('${key}')">${item.text}</div>${item.note?`<div class="item-note">${item.note}</div>`:''}</div>`;
+          html += `<button class="delete-btn" onclick="event.stopPropagation();deleteItem('${key}')" title="Delete item">×</button>`;
+          html += `</div>`;
+        }
       });
       html += `</div>`;
     });
@@ -275,14 +392,25 @@ function render() {
     if (day.boxes) {
       html += `<div class="subsection"><div class="subsection-label">4 boxes — decoration & supplies</div></div>`;
       html += `<div class="box-grid">`;
-      day.boxes.forEach(box => {
-        html += `<div class="box-card"><div class="box-title"><span class="box-num">${box.num}</span>${box.title}</div>`;
+      day.boxes.forEach((box, bi) => {
+        html += `<div class="box-card"><div class="box-title"><span class="box-num">${box.num}</span>${box.title}<button class="add-btn" onclick="addItem('${day.id}', ${bi}, true)" title="Add item">+</button></div>`;
         box.items.forEach((item, ii) => {
           const key = getBoxKey(day.id, box.num, ii);
           const chk = state[key];
-          html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
-          html += `<div class="cb"><div class="check-mark"></div></div>`;
-          html += `<div class="item-text">${item}</div></div>`;
+          const isEditing = editingKey === key;
+          
+          if (isEditing) {
+            html += `<div class="box-item-row">`;
+            html += `<div class="cb"><div class="check-mark"></div></div>`;
+            html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+            html += `</div>`;
+          } else {
+            html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
+            html += `<div class="cb"><div class="check-mark"></div></div>`;
+            html += `<div class="item-text editable" onclick="event.stopPropagation();startEdit('${key}')">${item}</div>`;
+            html += `<button class="delete-btn" onclick="event.stopPropagation();deleteItem('${key}')" title="Delete item">×</button>`;
+            html += `</div>`;
+          }
         });
         html += `</div>`;
       });
