@@ -124,6 +124,11 @@
 <script>
 const CORRECT_PASSWORD = 'Frisbee2017';
 
+let state = {};
+let collapsed = {};
+let editingKey = null;
+let customData = null;
+
 function checkAuth() {
   const input = document.getElementById('password-input');
   const error = document.getElementById('auth-error');
@@ -143,10 +148,9 @@ function checkAuth() {
 }
 
 function initializeApp() {
-  let state = {};
-  let collapsed = {};
-  let editingKey = null;
-  let customData = null;
+  loadState();
+  render();
+}
 
 const ORIGINAL_DATA = [
   {
@@ -287,7 +291,7 @@ const ORIGINAL_DATA = [
       { name: "Both of you", items: [
         { text: "Swimwear", note: null },
         { text: "Towel (large)", note: null },
-        { text: "Dry Robes", notes: null},
+        { text: "Dry Robes", note: null},
         { text: "Cosy jumper or hoodie", note: "For after the swim & sauna" },
         { text: "Warm socks", note: null },
         { text: "Flip flops or slip-ons", note: "Easy footwear for changing" },
@@ -509,7 +513,6 @@ function toggleDay(id) {
 
 loadState();
 render();
-}
 
 // Check authentication on page load
 if (localStorage.getItem('wedding_auth') === 'true') {
