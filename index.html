@@ -70,6 +70,37 @@
   .auth-btn:hover { background: #2d540d; }
   .auth-error { color: #dc2626; font-size: 12px; margin-top: 0.5rem; min-height: 16px; }
   .hidden { display: none; }
+  @media (max-width: 640px) {
+    body { padding: 1rem 0.5rem; }
+    .pl-wrap { max-width: 100%; padding: 0 0.5rem; }
+    .pl-title { font-size: 20px; }
+    .pl-sub { font-size: 13px; }
+    .day-header { padding: 12px 14px; }
+    .day-name { font-size: 15px; }
+    .day-detail { font-size: 11px; }
+    .subsection-label { padding: 8px 14px 5px; font-size: 11px; }
+    .item-row { padding: 6px 14px; gap: 8px; }
+    .item-text { font-size: 13px; }
+    .item-note { font-size: 11px; }
+    .cb { width: 14px; height: 14px; margin-top: 1px; }
+    .check-mark { width: 8px; height: 8px; }
+    .box-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; }
+    .box-card { padding: 10px 12px; }
+    .box-title { font-size: 12px; margin-bottom: 6px; }
+    .box-num { width: 18px; height: 18px; font-size: 10px; }
+    .box-item-row { padding: 4px 0; gap: 6px; }
+    .box-item-row .cb { width: 12px; height: 12px; }
+    .box-item-row .item-text { font-size: 12px; }
+    .add-btn { width: 14px; height: 14px; font-size: 11px; margin-left: 6px; }
+    .delete-btn { width: 14px; height: 14px; font-size: 9px; margin-left: 4px; }
+    .edit-input { font-size: 13px; padding: 1px 4px; }
+    .edit-note { font-size: 11px; padding: 1px 4px; }
+    .auth-overlay { padding: 1rem; }
+    .auth-card { width: 100%; max-width: 300px; padding: 1.5rem; }
+    .auth-title { font-size: 16px; margin-bottom: 1rem; }
+    .auth-input { padding: 10px; font-size: 13px; }
+    .auth-btn { padding: 10px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
