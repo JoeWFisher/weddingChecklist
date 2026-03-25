@@ -61,10 +61,28 @@
   .edit-note { border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px; font-size: 12px; font-family: inherit; outline: none; background: #f9f9f7; margin-top: 2px; width: 100%; }
   .item-text.editable { cursor: text; padding: 2px 4px; border-radius: 3px; transition: background 0.2s; }
   .item-text.editable:hover { background: #f5f5f2; }
+  .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f9f9f7; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .auth-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 2rem; width: 320px; text-align: center; }
+  .auth-title { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; color: #1a1a18; }
+  .auth-input { width: 100%; padding: 12px; border: 0.5px solid #aaa; border-radius: 6px; font-size: 14px; margin-bottom: 1rem; outline: none; transition: border-color 0.2s; }
+  .auth-input:focus { border-color: #3b6d11; }
+  .auth-btn { width: 100%; padding: 12px; background: #3b6d11; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+  .auth-btn:hover { background: #2d540d; }
+  .auth-error { color: #dc2626; font-size: 12px; margin-top: 0.5rem; min-height: 16px; }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
-<div class="pl-wrap">
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-title">Abi & Joe — Wedding Packing List</div>
+    <input type="password" id="password-input" class="auth-input" placeholder="Enter password" onkeydown="if(event.key==='Enter'){checkAuth()}">
+    <button class="auth-btn" onclick="checkAuth()">Enter</button>
+    <div id="auth-error" class="auth-error"></div>
+  </div>
+</div>
+
+<div class="pl-wrap hidden" id="main-app">
   <div class="pl-header">
     <div class="pl-title">Abi & Joe — Wedding Packing List</div>
     <div class="pl-sub">Sunday 5 April 2026 · Wasing Park, Reading</div>
@@ -73,10 +91,31 @@
 </div>
 
 <script>
-let state = {};
-let collapsed = {};
-let editingKey = null;
-let customData = null;
+const CORRECT_PASSWORD = 'Frisbee2017';
+
+function checkAuth() {
+  const input = document.getElementById('password-input');
+  const error = document.getElementById('auth-error');
+  const authOverlay = document.getElementById('auth-overlay');
+  const mainApp = document.getElementById('main-app');
+  
+  if (input.value === CORRECT_PASSWORD) {
+    localStorage.setItem('wedding_auth', 'true');
+    authOverlay.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    initializeApp();
+  } else {
+    error.textContent = 'Incorrect password';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function initializeApp() {
+  let state = {};
+  let collapsed = {};
+  let editingKey = null;
+  let customData = null;
 
 const ORIGINAL_DATA = [
   {
@@ -439,6 +478,16 @@ function toggleDay(id) {
 
 loadState();
 render();
+}
+
+// Check authentication on page load
+if (localStorage.getItem('wedding_auth') === 'true') {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  initializeApp();
+} else {
+  document.getElementById('password-input').focus();
+}
 </script>
 </body>
 </html>
