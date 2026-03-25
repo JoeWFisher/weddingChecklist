@@ -433,6 +433,17 @@ function cancelEdit() {
   render();
 }
 
+function saveEditFromInputs(key) {
+  const textInput = document.getElementById(`edit-text-${key}`);
+  const noteInput = document.getElementById(`edit-note-${key}`);
+  
+  if (textInput) {
+    const newText = textInput.value;
+    const newNote = noteInput ? noteInput.value : null;
+    saveEdit(key, newText, newNote);
+  }
+}
+
 function render() {
   const app = document.getElementById('app');
   let html = '';
@@ -468,17 +479,17 @@ function render() {
           html += `<div class="item-row editing">`;
           html += `<div class="cb"><div class="check-mark"></div></div>`;
           html += `<div style="flex:1">`;
-          html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item.text}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value, this.nextElementSibling?.value)}else if(event.key==='Escape'){cancelEdit()}">`;
-          html += `<input type="text" class="edit-note" data-edit-key="${key}" placeholder="Note (optional)" value="${item.note || ''}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.previousElementSibling.value, this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+          html += `<input type="text" class="edit-input" id="edit-text-${key}" value="${item.text}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value, this.nextElementSibling?.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+          html += `<input type="text" class="edit-note" id="edit-note-${key}" placeholder="Note (optional)" value="${item.note || ''}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.previousElementSibling.value, this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
           html += `<div style="display:flex;gap:8px;margin-top:8px;">`;
-          html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEdit('${key}', document.querySelector('[data-edit-key=\"${key}\"].edit-input').value, document.querySelector('[data-edit-key=\"${key}\"].edit-note').value)">Save</button>`;
+          html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEditFromInputs('${key}')">Save</button>`;
           html += `<button class="auth-btn" style="flex:1;background:#666;" onclick="cancelEdit()">Cancel</button>`;
+          html += `<button class="delete-btn" style="flex:0 0 auto;width:36px;height:36px;margin-left:8px;" onclick="deleteItem('${key}')" title="Delete item">×</button>`;
           html += `</div></div></div>`;
         } else {
           html += `<div class="item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
           html += `<div class="cb"><div class="check-mark"></div></div>`;
           html += `<div><div class="item-text editable" onclick="event.stopPropagation();startEdit('${key}')">${item.text}</div>${item.note?`<div class="item-note">${item.note}</div>`:''}</div>`;
-          html += `<button class="delete-btn" onclick="event.stopPropagation();deleteItem('${key}')" title="Delete item">×</button>`;
           html += `</div>`;
         }
       });
@@ -499,16 +510,16 @@ function render() {
             html += `<div class="box-item-row editing">`;
             html += `<div class="cb"><div class="check-mark"></div></div>`;
             html += `<div style="flex:1">`;
-            html += `<input type="text" class="edit-input" data-edit-key="${key}" value="${item}" onkeydown="if(event.key==='Enter'){saveEdit('${key}', this.value)}else if(event.key==='Escape'){cancelEdit()}">`;
+            html += `<input type="text" class="edit-input" id="edit-text-${key}" value="${item}" onkeydown="if(event.key==='Enter'){saveEditFromInputs('${key}')}else if(event.key==='Escape'){cancelEdit()}">`;
             html += `<div style="display:flex;gap:8px;margin-top:8px;">`;
-            html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEdit('${key}', document.querySelector('[data-edit-key=\"${key}\"].edit-input').value)">Save</button>`;
+            html += `<button class="auth-btn" style="flex:1;background:#3b6d11;" onclick="saveEditFromInputs('${key}')">Save</button>`;
             html += `<button class="auth-btn" style="flex:1;background:#666;" onclick="cancelEdit()">Cancel</button>`;
+            html += `<button class="delete-btn" style="flex:0 0 auto;width:36px;height:36px;margin-left:8px;" onclick="deleteItem('${key}')" title="Delete item">×</button>`;
             html += `</div></div></div>`;
           } else {
             html += `<div class="box-item-row${chk?' checked':''}" onclick="toggle('${key}')">`;
             html += `<div class="cb"><div class="check-mark"></div></div>`;
             html += `<div class="item-text editable" onclick="event.stopPropagation();startEdit('${key}')">${item}</div>`;
-            html += `<button class="delete-btn" onclick="event.stopPropagation();deleteItem('${key}')" title="Delete item">×</button>`;
             html += `</div>`;
           }
         });
